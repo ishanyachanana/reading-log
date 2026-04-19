@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0f1115">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Reading Log">
+  <meta name="description" content="A personal reading log. Save links, highlights, and notes from across the web.">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <title>Reading Log</title>
+</head>
+<body>
+  <header class="app-header">
+    <h1>Reading Log</h1>
+    <div class="header-actions">
+      <button id="btn-new" class="btn btn-primary" type="button">+ New</button>
+      <div class="menu-wrap">
+        <button id="btn-menu" class="btn btn-icon" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Menu">⋯</button>
+        <div id="menu-dropdown" class="menu-dropdown hidden" role="menu">
+          <button id="btn-export" type="button" role="menuitem">Export JSON</button>
+          <button id="btn-import" type="button" role="menuitem">Import JSON</button>
+          <input type="file" id="file-import" accept="application/json,.json" hidden>
+          <button id="btn-about" type="button" role="menuitem">About / Setup</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <div class="filters">
+      <input type="search" id="search" placeholder="Search title, highlight, notes…" autocomplete="off">
+      <div class="filter-row">
+        <select id="filter-status" aria-label="Filter by status">
+          <option value="">All statuses</option>
+          <option value="Saved">Saved</option>
+          <option value="Reading">Reading</option>
+          <option value="Done">Done</option>
+        </select>
+        <select id="filter-platform" aria-label="Filter by platform">
+          <option value="">All platforms</option>
+        </select>
+        <select id="filter-tag" aria-label="Filter by tag">
+          <option value="">All tags</option>
+        </select>
+      </div>
+    </div>
+
+    <ul id="entries" class="entries" aria-live="polite"></ul>
+    <div id="empty-state" class="empty-state hidden">
+      <p>No entries yet.</p>
+      <p class="muted">Share a link to this app from Safari, or tap <strong>+ New</strong>.</p>
+    </div>
+  </main>
+
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-content">
+      <header class="modal-header">
+        <h2 id="modal-title">New Entry</h2>
+        <button id="btn-close" class="btn btn-icon" type="button" aria-label="Close">×</button>
+      </header>
+      <form id="entry-form" autocomplete="off">
+        <label>Title
+          <input name="title" required maxlength="400">
+        </label>
+        <label>URL
+          <input name="url" type="url" inputmode="url" placeholder="https://…">
+        </label>
+        <label>Platform
+          <input name="platform" placeholder="auto-detected from URL" maxlength="60">
+        </label>
+        <label>Highlight / Quote
+          <textarea name="highlight" rows="4" placeholder="Selected text or a pulled quote"></textarea>
+        </label>
+        <label>Notes
+          <textarea name="notes" rows="3" placeholder="Your own thoughts"></textarea>
+        </label>
+        <label>Tags
+          <input name="tags" placeholder="comma, separated, tags">
+        </label>
+        <label>Status
+          <select name="status">
+            <option value="Saved">Saved</option>
+            <option value="Reading">Reading</option>
+            <option value="Done">Done</option>
+          </select>
+        </label>
+        <input type="hidden" name="id">
+        <div class="form-actions">
+          <button type="button" id="btn-delete" class="btn btn-danger hidden">Delete</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="detail" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+    <div class="modal-content">
+      <header class="modal-header">
+        <h2 id="detail-title">Entry</h2>
+        <button id="btn-detail-close" class="btn btn-icon" type="button" aria-label="Close">×</button>
+      </header>
+      <div id="detail-body" class="detail-body"></div>
+      <div class="form-actions">
+        <button type="button" id="btn-detail-delete" class="btn btn-danger">Delete</button>
+        <button type="button" id="btn-detail-edit" class="btn btn-primary">Edit</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="about" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="about-title">
+    <div class="modal-content">
+      <header class="modal-header">
+        <h2 id="about-title">Setup & Sharing</h2>
+        <button id="btn-about-close" class="btn btn-icon" type="button" aria-label="Close">×</button>
+      </header>
+      <div class="detail-body">
+        <h3>Install</h3>
+        <p>On iPhone: open in Safari, tap <strong>Share → Add to Home Screen</strong>.</p>
+        <h3>Sharing to this app</h3>
+        <p><strong>Android / Chrome:</strong> works out of the box — appears in the system share sheet after install.</p>
+        <p><strong>iPhone:</strong> Safari doesn't yet expose PWAs as share targets. Use the built-in Shortcuts app:</p>
+        <ol>
+          <li>Shortcuts → <strong>+</strong> → <em>Add Action</em> → <strong>URL</strong>.</li>
+          <li>Set URL to: <code id="share-url-example"></code></li>
+          <li>Add <strong>Open URLs</strong> action below it.</li>
+          <li>In the shortcut details, enable <strong>Show in Share Sheet</strong>; accept <em>URLs</em> and <em>Text</em>.</li>
+          <li>Edit the URL action: replace the placeholder with a <em>Shortcut Input</em> magic variable (URL-encoded).</li>
+        </ol>
+        <p class="muted">A ready-to-use template is in the repo's <code>README.md</code>.</p>
+        <h3>Storage</h3>
+        <p>All entries live in this browser's <code>localStorage</code>. Use <strong>Export JSON</strong> regularly to back up.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

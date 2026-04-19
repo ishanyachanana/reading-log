@@ -47,23 +47,107 @@ Once installed, the app appears as a target in the system share sheet automatica
 
 ### iPhone / Safari (via Shortcuts)
 
-**iOS Safari does not yet expose PWAs as share targets.** Workaround with the built-in Shortcuts app:
+**iOS Safari does not expose PWAs as share targets.** Workaround: a built-in Shortcuts recipe that calls the app's `/share` URL with `autosave=1` so the entry is saved immediately (no need to tap Save in the form).
 
-1. Open **Shortcuts → + → New Shortcut**.
-2. Tap **Add Action → URL**. Paste:
-   ```
-   https://YOUR-DOMAIN.vercel.app/share?url=[URL]&title=[TITLE]&text=[TEXT]
-   ```
-3. Replace each bracketed placeholder with a **magic variable** from **Shortcut Input** (URL-encoded). Specifically:
-   - `[URL]` → Shortcut Input (as URL, URL-encoded)
-   - `[TITLE]` → Shortcut Input (as Name, URL-encoded)
-   - `[TEXT]` → Shortcut Input (as Text, URL-encoded)
-4. Add an **Open URLs** action beneath the URL action.
-5. Rename the shortcut to **Save to Reading Log**.
-6. Tap the shortcut settings (ⓘ) → enable **Show in Share Sheet** → accept **URLs, Text, Safari web pages**.
-7. Now in Safari/Substack/X: tap **Share → Save to Reading Log**. The PWA opens with the new-entry form pre-filled.
+#### The endpoint the Shortcut calls
 
-Tip: pin the shortcut high up in the share sheet so it's one tap away.
+```
+https://YOUR-DOMAIN.vercel.app/share?autosave=1
+  &url=<URL-encoded page URL>
+  &title=<URL-encoded page title>
+  &text=<URL-encoded highlight>
+```
+
+When the Shortcut opens that URL, the PWA:
+1. Parses the query params.
+2. Auto-creates an entry in `localStorage` with `status = "Saved"`.
+3. Flashes a **Saved ✓** toast and shows the library.
+
+Drop `autosave=1` if you want the pre-filled new-entry form instead (for manual review).
+
+Optional params: `notes`, `tags` (comma-separated).
+
+#### Build the Shortcut (step by step)
+
+Open the built-in **Shortcuts** app and tap **+** (new shortcut). Add the following actions in order. For each, tap **Add Action** and search by the action name in bold.
+
+**1. Get current URL**
+- Action: **Get Details of Safari Web Page**
+- Detail: **Page URL**
+- Input: tap the "Safari web page" placeholder and pick **Shortcut Input**.
+
+**2. Get current title**
+- Action: **Get Details of Safari Web Page** (a second copy)
+- Detail: **Name**
+- Input: **Shortcut Input**.
+
+**3. Ask for the highlight (dismissable)**
+- Action: **Ask for Input**
+- Prompt: `Highlight or quote? (optional)`
+- Input Type: **Text**
+- Tap the options row → toggle **Allow Multiple Lines** on, leave **Default Answer** blank.
+  *(Leaving the prompt empty and pressing Done stores an empty string — the entry is still saved.)*
+
+**4. URL-encode each variable**
+Add three copies of the **URL Encode** action, each operating on one of the variables above:
+- Encode #1 → the **Page URL** from step 1
+- Encode #2 → the **Name** from step 2
+- Encode #3 → the **Provided Input** from step 3
+
+In each URL Encode action, tap the input placeholder and pick the matching magic variable. The Shortcuts app will rename them as `URL Encoded Text`, `URL Encoded Text 2`, `URL Encoded Text 3` — you can rename the variables (long-press → Rename Variable) to `EncURL`, `EncTitle`, `EncText` for clarity.
+
+**5. Build the target URL**
+- Action: **Text**
+- Tap into the content area and type:
+  ```
+  https://YOUR-DOMAIN.vercel.app/share?autosave=1&url=
+  ```
+- Immediately after `url=`, insert the `EncURL` variable. Then type `&title=` and insert `EncTitle`. Then type `&text=` and insert `EncText`.
+
+Final content looks like:
+```
+https://YOUR-DOMAIN.vercel.app/share?autosave=1&url=[EncURL]&title=[EncTitle]&text=[EncText]
+```
+(Square-bracketed names are the magic-variable chips, not literal text.)
+
+**6. Open the URL**
+- Action: **Open URLs**
+- Input: the **Text** from step 5.
+  *(If you have the PWA installed to your home screen, iOS opens it directly. Otherwise Safari opens it.)*
+
+**7. Confirmation (optional — the PWA already shows its own toast)**
+- Action: **Show Notification**
+- Title: `Reading Log`
+- Body: `Saved`
+- Skip this step if you'd rather not double up on confirmations.
+
+#### Shortcut settings
+
+Tap the ⓘ icon at the top of the shortcut editor:
+
+- **Name**: `Save to Reading Log`
+- **Icon / color**: your choice.
+- **Show in Share Sheet**: **ON**.
+- **Share Sheet Types**: untick everything except **Safari web pages** (and optionally **URLs** for sharing from non-Safari apps).
+- **Show in Share Sheet → Receive** (newer iOS puts it here): **Safari web pages**, **URLs**.
+
+Tap **Done**.
+
+#### Use it
+
+In Safari (or Substack, X, any WebKit-based browser on iOS):
+
+1. Tap **Share** → scroll to the actions row → tap **Save to Reading Log**.
+2. The highlight prompt appears. Paste or type a quote, or just tap **Done** to skip.
+3. The PWA opens, flashes **Saved ✓**, and the entry is in your library.
+
+Tip: in the share sheet, long-press the **Save to Reading Log** row and pin it to the top.
+
+#### Why no .shortcut file in the repo?
+
+Apple's `.shortcut` binary format requires an iCloud signature for clean import — unsigned plists trigger an "Untrusted Shortcut" warning that has to be enabled in **Settings → Shortcuts**, and the action identifiers shift between iOS versions. A 10-step build with variable drag-drop is more reliable than shipping an unsigned plist that may not import.
+
+Once you've built the shortcut yourself, you can share it via iCloud (**⋯ → Share → Copy iCloud Link**) — that link is the canonical, Apple-signed distribution format.
 
 ## Data
 

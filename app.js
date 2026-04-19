@@ -343,6 +343,9 @@
     const sharedUrl = params.get('url') || extractUrlFromText(params.get('text') || '') || '';
     const sharedText = params.get('text') || '';
     const sharedTitle = params.get('title') || '';
+    const autosave = params.get('autosave') === '1' || params.get('auto') === '1';
+    const tagsParam = params.get('tags') || '';
+    const notesParam = params.get('notes') || '';
 
     // If text contains a URL but url param is empty, strip the URL from text when using as highlight
     let highlight = sharedText;
@@ -355,17 +358,54 @@
     if (!title && highlight) title = highlight.slice(0, 140);
     if (!title) title = sharedUrl;
 
+    const cleanUrl = () => {
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState({}, '', '/');
+      }
+    };
+
+    if (autosave) {
+      upsertEntry({
+        title,
+        url: sharedUrl,
+        platform: detectPlatform(sharedUrl),
+        highlight,
+        notes: notesParam,
+        tags: parseTags(tagsParam),
+        status: 'Saved'
+      });
+      render();
+      showToast('Saved ✓');
+      cleanUrl();
+      return;
+    }
+
     openEntryModal(null);
     const form = $('#entry-form');
     form.elements.title.value = title;
     form.elements.url.value = sharedUrl;
     form.elements.platform.value = detectPlatform(sharedUrl);
     form.elements.highlight.value = highlight;
+    if (notesParam) form.elements.notes.value = notesParam;
+    if (tagsParam) form.elements.tags.value = tagsParam;
+    cleanUrl();
+  }
 
-    // Clean the URL so a refresh doesn't re-trigger the share flow
-    if (window.history && window.history.replaceState) {
-      window.history.replaceState({}, '', '/');
+  let toastTimer = null;
+  function showToast(message) {
+    let el = $('#toast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'toast';
+      el.className = 'toast';
+      el.setAttribute('role', 'status');
+      el.setAttribute('aria-live', 'polite');
+      document.body.appendChild(el);
     }
+    el.textContent = message;
+    el.classList.add('toast-visible');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('toast-visible'), 1800);
   }
 
   // ---------- Service worker ----------
@@ -485,7 +525,7 @@
     $('#btn-about').addEventListener('click', () => {
       menu.classList.add('hidden');
       const origin = window.location.origin || 'https://your-app.vercel.app';
-      const example = `${origin}/share?url=URL_PLACEHOLDER&title=TITLE_PLACEHOLDER&text=TEXT_PLACEHOLDER`;
+      const example = `${origin}/share?autosave=1&url=…&title=…&text=…`;
       const el = $('#share-url-example');
       if (el) el.textContent = example;
       $('#about').classList.remove('hidden');

@@ -123,15 +123,19 @@
         <p>On iPhone: open in Safari, tap <strong>Share → Add to Home Screen</strong>.</p>
         <h3>Sharing to this app</h3>
         <p><strong>Android / Chrome:</strong> works out of the box — appears in the system share sheet after install.</p>
-        <p><strong>iPhone:</strong> Safari doesn't yet expose PWAs as share targets. Use the built-in Shortcuts app:</p>
+        <p><strong>iPhone:</strong> Safari doesn't expose PWAs as share targets. Use an Apple Shortcut that opens this URL (add <code>&amp;autosave=1</code> to save without opening the form):</p>
+        <p><code id="share-url-example"></code></p>
+        <p>The Shortcut should:</p>
         <ol>
-          <li>Shortcuts → <strong>+</strong> → <em>Add Action</em> → <strong>URL</strong>.</li>
-          <li>Set URL to: <code id="share-url-example"></code></li>
-          <li>Add <strong>Open URLs</strong> action below it.</li>
-          <li>In the shortcut details, enable <strong>Show in Share Sheet</strong>; accept <em>URLs</em> and <em>Text</em>.</li>
-          <li>Edit the URL action: replace the placeholder with a <em>Shortcut Input</em> magic variable (URL-encoded).</li>
+          <li>Accept <em>Safari web pages</em> as input.</li>
+          <li>Use <strong>Get Details of Safari Web Page</strong> twice — once for <em>Page URL</em>, once for <em>Name</em>.</li>
+          <li><strong>Ask for Input</strong> (Text, allow empty) for the highlight.</li>
+          <li>Run each through <strong>URL Encode</strong>.</li>
+          <li>Build a <strong>Text</strong> action with the URL above, using <code>autosave=1</code> plus the three encoded variables in <code>url=</code>, <code>title=</code>, <code>text=</code>.</li>
+          <li><strong>Open URLs</strong> on that text.</li>
+          <li>In the shortcut's settings, enable <em>Show in Share Sheet</em> and accept Safari web pages.</li>
         </ol>
-        <p class="muted">A ready-to-use template is in the repo's <code>README.md</code>.</p>
+        <p class="muted">Full step-by-step in the repo's <code>README.md</code>.</p>
         <h3>Storage</h3>
         <p>All entries live in this browser's <code>localStorage</code>. Use <strong>Export JSON</strong> regularly to back up.</p>
       </div>
